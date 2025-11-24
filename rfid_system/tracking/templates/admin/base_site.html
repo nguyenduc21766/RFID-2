@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}RFID Management{% endblock %}
+
+{% block branding %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
+
+<h1 id="site-name">
+  <img src="{% static 'img/logo-1.png' %}" alt="Logo" height="40" style="vertical-align: middle;">
+  <span>RFID Management System</span>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

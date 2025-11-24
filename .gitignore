@@ -1,0 +1,26 @@
+# ---- Python (Django backend) ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+media/
+staticfiles/
+
+# ---- Node / React frontend ----
+RFID-UI/node_modules/
+RFID-UI/dist/
+RFID-UI/.vite/
+RFID-UI/.env
+RFID-UI/.env.local
+
+# ---- Logs ----
+*.log
+
+# ---- OS / Editor ----
+.DS_Store
+.idea/
+.vscode/
+*.swp

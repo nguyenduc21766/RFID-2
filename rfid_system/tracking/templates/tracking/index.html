@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>RFID Tracking Dashboard</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="{% static 'js/dashboard.js' %}" defer></script>
+  <style>
+    /* your CSS styles (same as before) */
+  </style>
+</head>
+<body onload="initDashboard('{% url 'rfid_live_summary' %}')">
+  <h1>RFID Tracking Dashboard</h1>
+
+  <div class="topbar">
+    <button id="btnRefresh" onclick="refreshData()">🔄 Refresh</button>
+    <span id="lastUpdated" class="status">Last updated: —</span>
+    <input id="searchBox" type="search" placeholder="Filter by EPC / Reader / MAC…" oninput="applyFilter()" />
+    <a href="/admin/" style="margin-left:auto;">Go to Admin Panel</a>
+  </div>
+
+  <table id="detections">
+    <thead>
+      <tr>
+        <th>EPC</th><th>Reader</th><th>Antenna</th><th>RSSI</th><th>MAC</th><th>Last Seen</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="message" class="status"></div>
+</body>
+</html>
