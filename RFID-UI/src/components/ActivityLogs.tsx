@@ -19,7 +19,6 @@ interface ActivityLog {
   eventType: string;
 }
 
-// change this if your backend runs on a different host/port
 const BASE_URL = 'http://10.80.26.210:8000';
 
 export function ActivityLogs() {
@@ -28,18 +27,18 @@ export function ActivityLogs() {
   const [filterReader, setFilterReader] = useState('all');
   const [filterEvent, setFilterEvent] = useState('all');
 
-  // ✅ default date range: last 7 days
+  // Default date: last 7 days
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 7); // last 7 days; change number if you want other range
-    return d.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
   });
 
   const [toDate, setToDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
 
-  // ---------------- FETCH FROM BACKEND ----------------
+  // ================= FETCH LOGS =================
   const fetchLogs = async () => {
     try {
       let url = `${BASE_URL}/api/activity-logs/`;
@@ -51,15 +50,13 @@ export function ActivityLogs() {
 
       console.log('Fetching activity logs from:', url);
 
-      const res = await fetch(url, {credentials: 'include',});
-      console.log('Response status:', res.status);
+      const res = await fetch(url, {
+        credentials: 'include',
+      });
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      console.log('Raw logs payload:', data);
 
       const parsed: ActivityLog[] = (data.logs || []).map((d: any) => ({
         id: String(d.id),
@@ -72,7 +69,6 @@ export function ActivityLogs() {
         eventType: d.event ?? 'detected',
       }));
 
-      console.log('Parsed logs:', parsed);
       setLogs(parsed);
     } catch (err) {
       console.error('Failed to fetch logs:', err);
@@ -80,13 +76,11 @@ export function ActivityLogs() {
     }
   };
 
-  // call once when component mounts → uses the default last-7-days range
   useEffect(() => {
     fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --------------- FILTERING -----------------
+  // ================= FILTERING =================
   const filteredLogs = logs.filter((log) => {
     const term = searchTerm.toLowerCase();
 
@@ -100,6 +94,57 @@ export function ActivityLogs() {
 
     return matchesSearch && matchesReader && matchesEvent;
   });
+
+  // ================= CSV EXPORT =================
+  const handleExportCSV = () => {
+    if (!filteredLogs.length) {
+      toast.warning('No activity logs to export');
+      return;
+    }
+
+    const header = [
+      'Timestamp',
+      'Event',
+      'EPC',
+      'Object Name',
+      'Reader',
+      'Antenna',
+      'RSSI',
+    ];
+
+    const rows = filteredLogs.map((log) => [
+      log.timestamp.toLocaleString(),
+      log.eventType,
+      log.epc,
+      log.objectName,
+      log.reader,
+      String(log.antenna),
+      String(log.rssi),
+    ]);
+
+    const escapeCSV = (value: string) =>
+      `"${String(value).replace(/"/g, '""')}"`;
+
+    const csvContent =
+      [header, ...rows]
+        .map((row) => row.map(escapeCSV).join(','))
+        .join('\r\n');
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const today = new Date().toISOString().split('T')[0];
+
+    link.href = url;
+    link.download = `activity-logs-${today}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const getEventBadge = (eventType: string) => {
     const variants: Record<string, string> = {
@@ -117,15 +162,17 @@ export function ActivityLogs() {
 
   const formatTime = (date: Date) => date.toLocaleString();
 
-  // ---------------- UI ----------------
+  // ================= UI =================
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-slate-900 mb-2">Activity Logs</h2>
-        <p className="text-slate-600">Historical log of all RFID tag detections and events</p>
+        <p className="text-slate-600">
+          Historical log of all RFID tag detections and events
+        </p>
       </div>
 
-      {/* Filters and Export */}
+      {/* Filters */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-3">
@@ -164,7 +211,7 @@ export function ActivityLogs() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" onClick={() => console.log('CSV export TODO')}>
+            <Button variant="outline" onClick={handleExportCSV}>
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
@@ -172,7 +219,7 @@ export function ActivityLogs() {
         </CardContent>
       </Card>
 
-      {/* Date Range Selector */}
+      {/* Date Range */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -180,22 +227,14 @@ export function ActivityLogs() {
             <div className="flex flex-col sm:flex-row gap-3 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-600">From:</span>
-                <Input
-                  type="date"
-                  className="w-auto"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                />
+                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
               </div>
+
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-600">To:</span>
-                <Input
-                  type="date"
-                  className="w-auto"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                />
+                <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
               </div>
+
               <Button variant="outline" onClick={fetchLogs}>
                 Apply
               </Button>
@@ -204,11 +243,14 @@ export function ActivityLogs() {
         </CardContent>
       </Card>
 
-      {/* Activity Table */}
+      {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Activity History ({filteredLogs.length} entries)</CardTitle>
+          <CardTitle>
+            Activity History ({filteredLogs.length} entries)
+          </CardTitle>
         </CardHeader>
+
         <CardContent>
           <div className="rounded-md border">
             <Table>
@@ -223,10 +265,13 @@ export function ActivityLogs() {
                   <TableHead>RSSI</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {filteredLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="text-sm">{formatTime(log.timestamp)}</TableCell>
+                    <TableCell className="text-sm">
+                      {formatTime(log.timestamp)}
+                    </TableCell>
                     <TableCell>{getEventBadge(log.eventType)}</TableCell>
                     <TableCell className="font-mono text-xs">{log.epc}</TableCell>
                     <TableCell>{log.objectName}</TableCell>

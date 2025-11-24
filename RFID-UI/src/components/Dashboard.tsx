@@ -192,7 +192,7 @@ export function Dashboard() {
               <TableBody>
                 {filteredTags.map(tag => (
                   <>
-                    <TableRow key={tag.id}>
+                    <TableRow key={tag.epc}>
                       <TableCell>
                         <Button variant="ghost" size="sm" onClick={() => toggleRow(tag.id)}>
                           {expandedRows.has(tag.id) ? <ChevronUp /> : <ChevronDown />}

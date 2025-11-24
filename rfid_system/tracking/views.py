@@ -442,7 +442,11 @@ def api_activity_logs(request):
         return JsonResponse({"error": "Only GET allowed"}, status=405)
 
     try:
-        qs = Detections.objects.select_related("reader", "antenna").order_by("-detected_at")
+        qs = (
+            Detections.objects
+            .select_related("reader", "antenna")
+            .order_by("-detected_at")
+        )
 
         # --- DATE FILTERS ---
         from_date = request.GET.get("from")
@@ -455,7 +459,26 @@ def api_activity_logs(request):
             qs = qs.filter(detected_at__date__lte=to_date)
 
         logs = []
+
         for d in qs:
+            # find previous detection for this EPC, earlier than current
+            previous = (
+                Detections.objects
+                .filter(epc=d.epc, detected_at__lt=d.detected_at)
+                .order_by("-detected_at")
+                .first()
+            )
+
+            if previous is None:
+                event = "added"        # first time we ever saw this EPC
+            elif (
+                previous.reader_id != d.reader_id
+                or previous.antenna_id != d.antenna_id
+            ):
+                event = "moved"        # same tag, different reader/antenna
+            else:
+                event = "detected"     # same place as last time
+
             logs.append({
                 "id": d.detection_id,
                 "timestamp": d.detected_at.isoformat(),
@@ -468,7 +491,7 @@ def api_activity_logs(request):
                 "reader": d.reader.model if d.reader else "",
                 "antenna": d.antenna.port_number if d.antenna else None,
                 "rssi": d.rssi,
-                "event": "detected",  # you can modify later
+                "event": event,   # 👈 now dynamic
             })
 
         return JsonResponse({"logs": logs})
