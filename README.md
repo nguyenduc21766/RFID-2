@@ -125,7 +125,7 @@ npm install
 ### 4.2 Start development server
 
 ```bash
-npm run dev -- --host
+npm run dev 
 ```
 
 You will see something like:
